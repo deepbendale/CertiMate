@@ -28,6 +28,8 @@ export class GenerateComponent implements OnInit {
   signaturePreview: string | null = null;
   logoPreview: string | null = null;
   isGenerating = false;
+  isLoading = true;
+  formErrors: string[]=[];
 
   constructor(
     private certificateService: CertificateService,
@@ -38,48 +40,42 @@ export class GenerateComponent implements OnInit {
   }
 
   loadTemplates(): void {
-    this.templates = [
-      {
-        id: '1',
-        name: 'Academic Achievement',
-        category: 'Academic',
-        orientation: 'Portrait',
-        fontFamily: 'Georgia',
-        imageUrl: 'assets/templates/academic-1.jpg',
-        isActive: true,
+    this.isLoading = true;
+    this.certificateService.getTemplates().subscribe({
+      next:(templates)=>{
+        this.templates=templates;
+        this.isLoading=false;
       },
-      {
-        id: '2',
-        name: 'Workshop Completion',
-        category: 'Workshop',
-        orientation: 'Landscape',
-        fontFamily: 'Arial',
-        imageUrl: 'assets/templates/workshop-1.jpg',
-        isActive: true,
-      },
-      {
-        id: '3',
-        name: 'Sports Achievement',
-        category: 'Sports',
-        orientation: 'Portrait',
-        fontFamily: 'Roboto',
-        imageUrl: 'assets/templates/sports-1.jpg',
-        isActive: true,
-      },
-    ];
+      error:(error)=>{
+        console.log("Error Loading Templates:", error);
+        this.isLoading = false;
+      }
+    });
   }
 
   onTemplateSelect(template:Template):void{
     this.selectedTemplate  =template;
     this.formData.templateId = template.id;
+    this.validateForm();
   }
   onSignatureUpload(event:Event):void{
     const file = (event.target as HTMLInputElement).files?.[0];
     if(file){
-      this.formData.signature = file;
+       // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file for signature');
+        return;
+      }
+        // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Signature file size must be less than 5MB');
+        return;
+      }
+       this.formData.signature = file;
       const reader = new FileReader();
-      reader.onload = (e)=>{
+      reader.onload = (e) => {
         this.signaturePreview = e.target?.result as string;
+        this.validateForm();
       };
       reader.readAsDataURL(file);
     }
@@ -88,50 +84,142 @@ export class GenerateComponent implements OnInit {
   onLogoUpload(event:Event):void{
     const file = (event.target as HTMLInputElement).files?.[0];
     if(file){
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file for logo');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Logo file size must be less than 5MB');
+        return;
+      }
+
       this.formData.logo = file;
       const reader = new FileReader();
-      reader.onload=(e)=>{
+      reader.onload = (e) => {
         this.logoPreview = e.target?.result as string;
       };
       reader.readAsDataURL(file);
     }
   }
 
-  generatePDF():void{
-    if(!this.isFormValid()){
-      alert('Please fill all the required fields');
-      return;
-    }
-    this.isGenerating=true;
-    console.log("Generating pdf with data: ", this.formData);
-    setTimeout(()=>{
-      this.isGenerating=false;
-      alert("PDF generated successsfully")
-    }, 2000);
-  }
-  sendEmail():void{
-    if (!this.isFormValid()) {
-      alert('Please fill all required fields');
-      return;
-    }
-
-    this.isGenerating = true;
-    console.log('Sending email with data:', this.formData);
-
-    setTimeout(() => {
-      this.isGenerating = false;
-      alert('Certificate sent to email successfully!');
-    }, 2000);
+  validateForm(): void {
+    this.formErrors = this.certificateService.validateFormData(this.formData);
   }
 
-   public isFormValid(): boolean {
+  isFormValid(): boolean {
+    return this.formErrors.length === 0 && this.isValidFormdata();
+  }
+
+  private isValidFormdata(): boolean{
     return !!(
-      this.formData.fullName &&
-      this.formData.email &&
-      this.formData.eventName &&
+      this.formData.fullName?.trim() &&
+      this.formData.email?.trim() &&
+      this.formData.eventName?.trim() &&
       this.formData.date &&
       this.formData.templateId &&
       this.formData.signature
     );
+  }
+
+  generatePDF(): void {
+    if (!this.isFormValid()) {
+      this.validateForm();
+      alert('Please fix the form errors before generating PDF');
+      return;
+    }
+
+    this.isGenerating = true;
+    
+    this.certificateService.generateCertificate(this.formData).subscribe({
+      next: (certificate) => {
+        console.log('Certificate generated:', certificate);
+        
+        // Now download PDF
+        this.certificateService.downloadPDF(certificate).subscribe({
+          next: (success) => {
+            if (success) {
+              alert(`PDF generated successfully! Verification code: ${certificate.verificationCode}`);
+            }
+            this.isGenerating = false;
+          },
+          error: (error) => {
+            console.error('PDF generation error:', error);
+            alert('Error generating PDF. Please try again.');
+            this.isGenerating = false;
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Certificate generation error:', error);
+        alert('Error generating certificate. Please try again.');
+        this.isGenerating = false;
+      }
+    });
+  }
+
+sendEmail(): void {
+    if (!this.isFormValid()) {
+      this.validateForm();
+      alert('Please fix the form errors before sending email');
+      return;
+    }
+
+    this.isGenerating = true;
+    
+    this.certificateService.generateCertificate(this.formData).subscribe({
+      next: (certificate) => {
+        console.log('Certificate generated:', certificate);
+        
+        // Now send email
+        this.certificateService.sendEmail(certificate).subscribe({
+          next: (success) => {
+            if (success) {
+              alert(`Certificate sent to ${certificate.email} successfully! Verification code: ${certificate.verificationCode}`);
+            }
+            this.isGenerating = false;
+          },
+          error: (error) => {
+            console.error('Email sending error:', error);
+            alert('Error sending email. Please try again.');
+            this.isGenerating = false;
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Certificate generation error:', error);
+        alert('Error generating certificate. Please try again.');
+        this.isGenerating = false;
+      }
+    });
+  }
+
+ // Helper method to get template by category
+  getTemplatesByCategory(category: string): Template[] {
+    return this.templates.filter(template => template.category === category);
+  }
+
+  // Helper method to clear form
+  clearForm(): void {
+    this.formData = {
+      fullName: '',
+      email: '',
+      eventName: '',
+      date: '',
+      templateId: '',
+      signature: null,
+      logo: null
+    };
+    this.selectedTemplate = null;
+    this.signaturePreview = null;
+    this.logoPreview = null;
+    this.formErrors = [];
+  }
+
+  // Navigate back to home
+  goBack(): void {
+    this.router.navigate(['/']);
   }
 }
