@@ -107,7 +107,7 @@ export class GenerateComponent implements OnInit {
     setTimeout(()=>{
       this.isGenerating=false;
       alert("PDF generated successsfully")
-    }, 2000)
+    }, 2000);
   }
   sendEmail():void{
     if (!this.isFormValid()) {
