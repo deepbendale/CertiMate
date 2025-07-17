@@ -1,1 +1,185 @@
-<p>generate works!</p>
+<div class="generate-container">
+  <div class="generate-header">
+    <h1>Generate Certificate</h1>
+    <p>Fill out the form below to create your professional certificate</p>
+  </div>
+
+  <div class="generate-content">
+    <!-- Form Section -->
+    <div class="form-section">
+      <form class="certificate-form" (ngSubmit)="generatePDF()">
+        
+        <!-- Personal Information -->
+        <div class="form-group">
+          <label for="fullName">Full Name *</label>
+          <input 
+            type="text" 
+            id="fullName" 
+            name="fullName"
+            [(ngModel)]="formData.fullName"
+            placeholder="Enter recipient's full name"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address *</label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email"
+            [(ngModel)]="formData.email"
+            placeholder="Enter email address"
+            required>
+        </div>
+
+        <!-- Event Information -->
+        <div class="form-group">
+          <label for="eventName">Event/Workshop Name *</label>
+          <input 
+            type="text" 
+            id="eventName" 
+            name="eventName"
+            [(ngModel)]="formData.eventName"
+            placeholder="Enter event or workshop name"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label for="date">Date *</label>
+          <input 
+            type="date" 
+            id="date" 
+            name="date"
+            [(ngModel)]="formData.date"
+            required>
+        </div>
+
+        <!-- Template Selection -->
+        <div class="form-group">
+          <label>Select Template *</label>
+          <div class="template-grid">
+            <div 
+              class="template-item"
+              *ngFor="let template of templates"
+              [class.selected]="selectedTemplate?.id === template.id"
+              (click)="onTemplateSelect(template)">
+              <div class="template-preview">
+                <img [src]="template.imageUrl" [alt]="template.name">
+              </div>
+              <div class="template-info">
+                <h4>{{ template.name }}</h4>
+                <p>{{ template.category }} • {{ template.orientation }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- File Uploads -->
+        <div class="upload-section">
+          <div class="form-group">
+            <label for="signature">Upload Signature *</label>
+            <div class="file-upload">
+              <input 
+                type="file" 
+                id="signature" 
+                name="signature"
+                accept="image/*"
+                (change)="onSignatureUpload($event)">
+              <div class="upload-placeholder" *ngIf="!signaturePreview">
+                <span>📝 Click to upload signature</span>
+              </div>
+              <div class="upload-preview" *ngIf="signaturePreview">
+                <img [src]="signaturePreview" alt="Signature preview">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="logo">Upload Logo (Optional)</label>
+            <div class="file-upload">
+              <input 
+                type="file" 
+                id="logo" 
+                name="logo"
+                accept="image/*"
+                (change)="onLogoUpload($event)">
+              <div class="upload-placeholder" *ngIf="!logoPreview">
+                <span>🏢 Click to upload logo</span>
+              </div>
+              <div class="upload-preview" *ngIf="logoPreview">
+                <img [src]="logoPreview" alt="Logo preview">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+          <button 
+            type="button" 
+            class="btn btn-secondary"
+            (click)="sendEmail()"
+            [disabled]="isGenerating || !isFormValid()">
+            <span *ngIf="!isGenerating">📧 Send to Email</span>
+            <span *ngIf="isGenerating">Sending...</span>
+          </button>
+          
+          <button 
+            type="submit" 
+            class="btn btn-primary"
+            [disabled]="isGenerating || !isFormValid()">
+            <span *ngIf="!isGenerating">📄 Download PDF</span>
+            <span *ngIf="isGenerating">Generating...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Preview Section -->
+    <div class="preview-section">
+      <div class="preview-header">
+        <h3>Live Preview</h3>
+        <p>Your certificate will look like this:</p>
+      </div>
+      
+      <div class="certificate-preview">
+        <div class="preview-placeholder" *ngIf="!selectedTemplate">
+          <span>📋 Select a template to see preview</span>
+        </div>
+        
+        <div class="preview-certificate" *ngIf="selectedTemplate">
+          <div class="certificate-mockup" [style.font-family]="selectedTemplate.fontFamily">
+            <div class="mockup-header">
+              <div class="mockup-logo" *ngIf="logoPreview">
+                <img [src]="logoPreview" alt="Logo">
+              </div>
+              <h2>Certificate of Achievement</h2>
+            </div>
+            
+            <div class="mockup-content">
+              <p>This is to certify that</p>
+              <h1 class="recipient-name">{{ formData.fullName || 'Recipient Name' }}</h1>
+              <p>has successfully completed</p>
+              <h3 class="event-name">{{ formData.eventName || 'Event Name' }}</h3>
+              <p>on {{ formData.date || 'Date' }}</p>
+            </div>
+            
+            <div class="mockup-footer">
+              <div class="signature-section">
+                <div class="signature-image" *ngIf="signaturePreview">
+                  <img [src]="signaturePreview" alt="Signature">
+                </div>
+                <div class="signature-placeholder" *ngIf="!signaturePreview">
+                  Signature
+                </div>
+              </div>
+              <div class="date-section">
+                <p>{{ formData.date || 'Date' }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
