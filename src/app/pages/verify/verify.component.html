@@ -1,1 +1,156 @@
-<p>verify works!</p>
+<div class="verify-container">
+  <div class="verify-header">
+    <h1>Verify Certificate</h1>
+    <p>Enter the verification code to validate a certificate</p>
+  </div>
+
+  <div class="verify-content">
+    <!-- Verification Form -->
+    <div class="verify-form-section" *ngIf="!isVerified && !isError">
+      <div class="form-card">
+        <div class="form-icon">🔍</div>
+        <h3>Certificate Verification</h3>
+        <p>Please enter the verification code found on your certificate</p>
+        
+        <form (ngSubmit)="verifyCertificate()" class="verification-form">
+          <div class="form-group">
+            <label for="verificationCode">Verification Code</label>
+            <input 
+              type="text" 
+              id="verificationCode"
+              name="verificationCode"
+              [(ngModel)]="verificationCode"
+              placeholder="Enter 8-character code (e.g. ABC12345)"
+              maxlength="8"
+              required
+              [disabled]="isLoading"
+              class="code-input">
+          </div>
+          
+          <button 
+            type="submit" 
+            class="btn btn-primary"
+            [disabled]="isLoading || !verificationCode?.trim()">
+            <span *ngIf="!isLoading">🔍 Verify Certificate</span>
+            <span *ngIf="isLoading">Verifying...</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-section" *ngIf="isLoading">
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Verifying certificate...</p>
+      </div>
+    </div>
+
+    <!-- Success State - Certificate Found -->
+    <div class="verify-success-section" *ngIf="isVerified && verifiedCertificate">
+      <div class="success-card">
+        <div class="success-icon">✅</div>
+        <h3>Certificate Verified Successfully!</h3>
+        <p>This certificate is valid and authentic.</p>
+        
+        <div class="certificate-details">
+          <div class="detail-row">
+            <span class="label">Certificate ID:</span>
+            <span class="value">{{ verifiedCertificate.id }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Recipient Name:</span>
+            <span class="value">{{ verifiedCertificate.fullName }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Event/Course:</span>
+            <span class="value">{{ verifiedCertificate.eventName }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Date Completed:</span>
+            <span class="value">{{ formatDate(verifiedCertificate.date) }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Email:</span>
+            <span class="value">{{ verifiedCertificate.email }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Verification Code:</span>
+            <span class="value code-highlight">{{ verifiedCertificate.verificationCode }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Issued Date:</span>
+            <span class="value">{{ formatDate(verifiedCertificate.createdAt) }}</span>
+          </div>
+        </div>
+
+        <div class="certificate-preview">
+          <h4>Certificate Preview</h4>
+          <div class="mini-certificate">
+            <div class="mini-header">
+              <h5>Certificate of Achievement</h5>
+            </div>
+            <div class="mini-content">
+              <p>This is to certify that</p>
+              <h3>{{ verifiedCertificate.fullName }}</h3>
+              <p>has successfully completed</p>
+              <h4>{{ verifiedCertificate.eventName }}</h4>
+              <p>{{ formatDate(verifiedCertificate.date) }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn btn-secondary" (click)="verifyAnother()">
+            🔍 Verify Another
+          </button>
+          <button class="btn btn-primary" routerLink="/generate">
+            📜 Generate Certificate
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error State - Certificate Not Found -->
+    <div class="verify-error-section" *ngIf="isError">
+      <div class="error-card">
+        <div class="error-icon">❌</div>
+        <h3>Certificate Not Found</h3>
+        <p>The verification code you entered is invalid or the certificate does not exist.</p>
+        
+        <div class="error-details">
+          <h4>Possible reasons:</h4>
+          <ul>
+            <li>The verification code was entered incorrectly</li>
+            <li>The certificate has been revoked</li>
+            <li>The verification code has expired</li>
+            <li>The certificate was not issued by our system</li>
+          </ul>
+        </div>
+
+        <div class="help-section">
+          <h4>Need help?</h4>
+          <p>Please double-check the verification code on your certificate or contact the issuing organization.</p>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn btn-secondary" (click)="tryAgain()">
+            🔄 Try Again
+          </button>
+          <button class="btn btn-primary" routerLink="/">
+            🏠 Go Home
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Code Instructions -->
+    <div class="qr-instructions" *ngIf="!isLoading">
+      <div class="instructions-card">
+        <div class="qr-icon">📱</div>
+        <h4>Quick Verification</h4>
+        <p>You can also verify certificates by scanning the QR code found on each certificate with your mobile device.</p>
+      </div>
+    </div>
+  </div>
+</div>
